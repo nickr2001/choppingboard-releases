@@ -33,7 +33,7 @@ jobs:
       - name: Install GitHub CLI
         run: choco install gh -y
 
-      # Step 5: Download release asset from releases repo (Windows-safe)
+      # Step 5: Download release asset from releases repo
       - name: Download release asset
         shell: pwsh
         env:
@@ -70,10 +70,10 @@ jobs:
             exit 1
           }
 
-      # Step 10: List extracted folder
+      # Step 10: List extracted folder (PowerShell-safe recursive)
       - name: List extracted files
         shell: pwsh
-        run: dir "$env:RELEASE_FOLDER" /s
+        run: dir "$env:RELEASE_FOLDER" -Recurse
 
       # Step 11: Install NSIS
       - name: Install NSIS
@@ -89,7 +89,7 @@ jobs:
       - name: Verify installer exists
         shell: pwsh
         run: dir
-
+          
       # Step 14: Upload installer to the release
       - name: Upload installer to the release
         uses: softprops/action-gh-release@v2
