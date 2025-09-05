@@ -79,11 +79,12 @@ jobs:
       - name: Install NSIS
         run: choco install nsis -y
 
-      # Step 12: Build NSIS installer
+      # Step 12: Build NSIS installer (full path to makensis)
       - name: Build NSIS installer
         shell: pwsh
         run: |
-          makensis /DAPPVER="$env:RELEASE_TAG" /DReleaseFolder="$env:RELEASE_FOLDER" installer.nsi
+          $nsisPath = "${env:ProgramFiles(x86)}\NSIS\makensis.exe"
+          & "$nsisPath" /DAPPVER="$env:RELEASE_TAG" /DReleaseFolder="$env:RELEASE_FOLDER" installer.nsi
 
       # Step 13: Verify installer exists
       - name: Verify installer exists
