@@ -24,12 +24,9 @@ jobs:
       - name: Install GitHub CLI
         run: choco install gh -y
 
-      # Step 4: Download release asset from releases repo
+      # Step 4: Download release asset from releases repo (single-line, Windows-compatible)
       - name: Download release asset
-        run: |
-          gh release download ${{ github.event.release.tag_name }} \
-            --repo nickr2001/choppingboard-releases \
-            --pattern ${{ env.RELEASE_ZIP }}
+        run: gh release download ${{ github.event.release.tag_name }} --repo nickr2001/choppingboard-releases --pattern ${{ env.RELEASE_ZIP }}
 
       # Step 5: Debug - verify zip exists
       - name: List downloaded files
@@ -49,15 +46,14 @@ jobs:
 
       # Step 9: Build NSIS installer
       - name: Build NSIS installer
-        run: |
-          makensis /DAPPVER=${{ env.RELEASE_TAG }} /DReleaseFolder=${{ env.RELEASE_FOLDER }} installer.nsi
+        run: makensis /DAPPVER=${{ env.RELEASE_TAG }} /DReleaseFolder=${{ env.RELEASE_FOLDER }} installer.nsi
 
       # Step 10: Debug - verify installer
       - name: Verify installer exists
         run: dir
 
       # Step 11: Upload installer to the release
-      - name: Upload installer to release
+      - name: Upload installer to the release
         uses: softprops/action-gh-release@v2
         with:
           files: installer_ChoppingBoard_${{ env.RELEASE_TAG }}.exe
