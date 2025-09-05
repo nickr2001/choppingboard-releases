@@ -64,7 +64,7 @@ jobs:
       - name: Check executable exists
         shell: pwsh
         run: |
-          $exePath = Join-Path "$PWD\build\$env:RELEASE_FOLDER" "ChoppingBoard.exe"
+          $exePath = Join-Path -Path "$PWD\build\$env:RELEASE_FOLDER" -ChildPath "ChoppingBoard.exe"
           if (-Not (Test-Path $exePath)) {
             Write-Error "Executable '$exePath' not found. Aborting workflow."
             exit 1
@@ -85,7 +85,7 @@ jobs:
         shell: pwsh
         run: |
           $nsisPath = "${env:ProgramFiles(x86)}\NSIS\makensis.exe"
-          $releaseFolderPath = Join-Path "$PWD\build\$env:RELEASE_FOLDER"
+          $releaseFolderPath = Join-Path -Path "$PWD\build" -ChildPath "$env:RELEASE_FOLDER"
           Write-Host "Passing absolute path to NSIS: $releaseFolderPath"
           & "$nsisPath" /DAPPVER="$env:RELEASE_TAG" /DReleaseFolder="$releaseFolderPath" installer.nsi
 
@@ -94,7 +94,7 @@ jobs:
         shell: pwsh
         run: dir
 
-      # 1️⃣4️⃣ Upload installer to release
+      # 1️⃣4️⃣ Upload installer to the release
       - name: Upload installer to the release
         uses: softprops/action-gh-release@v2
         with:
