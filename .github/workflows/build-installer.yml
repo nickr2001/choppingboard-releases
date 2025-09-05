@@ -24,45 +24,39 @@ jobs:
       - name: Install GitHub CLI
         run: choco install gh -y
 
-      # Step 4: Authenticate gh CLI using GITHUB_TOKEN
-      - name: Authenticate gh CLI
-        run: gh auth login --with-token
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      # Step 5: Download release asset from releases repo
+      # Step 4: Download release asset from releases repo
       - name: Download release asset
         run: |
           gh release download ${{ github.event.release.tag_name }} \
             --repo nickr2001/choppingboard-releases \
             --pattern ${{ env.RELEASE_ZIP }}
 
-      # Step 6: Debug - verify zip exists
+      # Step 5: Debug - verify zip exists
       - name: List downloaded files
         run: dir
 
-      # Step 7: Extract the zip
+      # Step 6: Extract the zip
       - name: Extract zip
         run: Expand-Archive -Path ${{ env.RELEASE_ZIP }} -DestinationPath .
 
-      # Step 8: Debug - list extracted folder
+      # Step 7: Debug - list extracted folder
       - name: List extracted files
         run: dir ${{ env.RELEASE_FOLDER }} /s
 
-      # Step 9: Install NSIS
+      # Step 8: Install NSIS
       - name: Install NSIS
         run: choco install nsis -y
 
-      # Step 10: Build NSIS installer
+      # Step 9: Build NSIS installer
       - name: Build NSIS installer
         run: |
           makensis /DAPPVER=${{ env.RELEASE_TAG }} /DReleaseFolder=${{ env.RELEASE_FOLDER }} installer.nsi
 
-      # Step 11: Debug - verify installer
+      # Step 10: Debug - verify installer
       - name: Verify installer exists
         run: dir
 
-      # Step 12: Upload installer to the release
+      # Step 11: Upload installer to the release
       - name: Upload installer to release
         uses: softprops/action-gh-release@v2
         with:
