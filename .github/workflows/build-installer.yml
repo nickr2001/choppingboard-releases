@@ -9,7 +9,7 @@ jobs:
     runs-on: windows-latest
 
     steps:
-      # Step 1: Checkout the repository where this workflow lives
+      # Step 1: Checkout repository
       - name: Checkout repository
         uses: actions/checkout@v4
 
@@ -26,9 +26,11 @@ jobs:
 
       # Step 4: Authenticate gh CLI using GITHUB_TOKEN
       - name: Authenticate gh CLI
-        run: gh auth login --with-token <<< ${{ secrets.GITHUB_TOKEN }}
+        run: gh auth login --with-token
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # Step 5: Download release asset from your releases repo
+      # Step 5: Download release asset from releases repo
       - name: Download release asset
         run: |
           gh release download ${{ github.event.release.tag_name }} \
