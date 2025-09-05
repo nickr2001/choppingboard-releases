@@ -60,11 +60,11 @@ jobs:
         shell: pwsh
         run: Expand-Archive -Path "$env:RELEASE_ZIP" -DestinationPath "build"
 
-      # 9️⃣ Check executable exists in nested folder
+      # 9️⃣ Check executable exists
       - name: Check executable exists
         shell: pwsh
         run: |
-          $exePath = Join-Path -Path "$PWD\build\$env:RELEASE_FOLDER" -ChildPath "ChoppingBoard.exe"
+          $exePath = Join-Path -Path "build\$env:RELEASE_FOLDER" -ChildPath "ChoppingBoard.exe"
           if (-Not (Test-Path $exePath)) {
             Write-Error "Executable '$exePath' not found. Aborting workflow."
             exit 1
@@ -80,21 +80,28 @@ jobs:
       - name: Install NSIS
         run: choco install nsis -y
 
-      # 1️⃣2️⃣ Build NSIS installer using absolute path
+      # 1️⃣2️⃣ Build NSIS installer using relative path
       - name: Build NSIS installer
         shell: pwsh
         run: |
           $nsisPath = "${env:ProgramFiles(x86)}\NSIS\makensis.exe"
-          $releaseFolderPath = Join-Path -Path "$PWD\build" -ChildPath "$env:RELEASE_FOLDER"
-          Write-Host "Passing absolute path to NSIS: $releaseFolderPath"
-          & "$nsisPath" /DAPPVER="$env:RELEASE_TAG" /DReleaseFolder="$releaseFolderPath" installer.nsi
+
+          # Change to build folder
+          Set-Location -Path "build"
+
+          # Use relative path inside build
+          $releaseFolderRelative = "$env:RELEASE_FOLDER"
+          Write-Host "Passing relative path to NSIS: $releaseFolderRelative"
+
+          # Run NSIS using relative folder
+          & "$nsisPath" /DAPPVER="$env:RELEASE_TAG" /DReleaseFolder="$releaseFolderRelative" ..\installer.nsi
 
       # 1️⃣3️⃣ Verify installer exists
       - name: Verify installer exists
         shell: pwsh
         run: dir
 
-      # 1️⃣4️⃣ Upload installer to the release
+      # 1️⃣4️⃣ Upload installer to release
       - name: Upload installer to the release
         uses: softprops/action-gh-release@v2
         with:
