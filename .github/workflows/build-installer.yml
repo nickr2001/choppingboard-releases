@@ -33,9 +33,11 @@ jobs:
       - name: Install GitHub CLI
         run: choco install gh -y
 
-      # Step 5: Download release asset from releases repo (single-line, Windows-safe)
+      # Step 5: Download release asset from releases repo (Windows-safe)
       - name: Download release asset
         shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh release download "$env:RELEASE_TAG" --repo "nickr2001/choppingboard-releases" --pattern "$env:RELEASE_ZIP"
 
