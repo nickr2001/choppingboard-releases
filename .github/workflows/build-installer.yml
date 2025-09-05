@@ -55,16 +55,16 @@ jobs:
         shell: pwsh
         run: dir
 
-      # Step 8: Extract the zip directly into the release folder
+      # Step 8: Extract the zip into the top-level release folder
       - name: Extract the zip
         shell: pwsh
         run: Expand-Archive -Path "$env:RELEASE_ZIP" -DestinationPath "$env:RELEASE_FOLDER"
 
-      # Step 9: Fail early if executable is missing
+      # Step 9: Fail early if executable is missing (nested folder)
       - name: Check executable exists
         shell: pwsh
         run: |
-          $exePath = "$env:RELEASE_FOLDER\ChoppingBoard.exe"
+          $exePath = Join-Path "$env:RELEASE_FOLDER" "$env:RELEASE_FOLDER\ChoppingBoard.exe"
           if (-Not (Test-Path $exePath)) {
             Write-Error "Executable '$exePath' not found inside extracted folder. Aborting workflow."
             exit 1
@@ -79,12 +79,13 @@ jobs:
       - name: Install NSIS
         run: choco install nsis -y
 
-      # Step 12: Build NSIS installer (full path to makensis)
+      # Step 12: Build NSIS installer (full path, nested folder)
       - name: Build NSIS installer
         shell: pwsh
         run: |
           $nsisPath = "${env:ProgramFiles(x86)}\NSIS\makensis.exe"
-          & "$nsisPath" /DAPPVER="$env:RELEASE_TAG" /DReleaseFolder="$env:RELEASE_FOLDER" installer.nsi
+          $releaseFolderPath = Join-Path "$env:RELEASE_FOLDER" "$env:RELEASE_FOLDER"
+          & "$nsisPath" /DAPPVER="$env:RELEASE_TAG" /DReleaseFolder="$releaseFolderPath" installer.nsi
 
       # Step 13: Verify installer exists
       - name: Verify installer exists
