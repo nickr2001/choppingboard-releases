@@ -27,8 +27,8 @@ Section "Main App (required)" SectionMain
     SetOutPath "$MainDir"
 
     ; Copy the executable from the zip folder
-    ; RELEASE_FOLDER must be passed as /DReleaseFolder=CB-v0.20 from workflow
-    File "/oname=${APPNAME}.exe" "$ReleaseFolder\${APPNAME}.exe"
+    ; RELEASE_FOLDER must be passed as /DReleaseFolder from workflow (absolute path)
+    File "/oname=${APPNAME}.exe" "$ReleaseFolder/${APPNAME}.exe"
 
     CreateDirectory "$MainDir\public\data"
 SectionEnd

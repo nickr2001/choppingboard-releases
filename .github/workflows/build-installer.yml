@@ -9,11 +9,11 @@ jobs:
     runs-on: windows-latest
 
     steps:
-      # Step 1: Checkout repository
+      # Checkout repository
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Step 2: Set release variables (Windows-safe)
+      # Set release variables
       - name: Set release variables
         shell: pwsh
         run: |
@@ -21,7 +21,7 @@ jobs:
           Add-Content -Path $Env:GITHUB_ENV -Value "RELEASE_ZIP=CB-${{ github.event.release.tag_name }}.zip"
           Add-Content -Path $Env:GITHUB_ENV -Value "RELEASE_FOLDER=CB-${{ github.event.release.tag_name }}"
 
-      # Step 3: Debug - verify environment variables
+      # Debug variables
       - name: Debug environment variables
         shell: pwsh
         run: |
@@ -29,11 +29,11 @@ jobs:
           Write-Host "RELEASE_ZIP='$env:RELEASE_ZIP'"
           Write-Host "RELEASE_FOLDER='$env:RELEASE_FOLDER'"
 
-      # Step 4: Install GitHub CLI
+      # Install GitHub CLI
       - name: Install GitHub CLI
         run: choco install gh -y
 
-      # Step 5: Download release asset from releases repo
+      # Download release asset
       - name: Download release asset
         shell: pwsh
         env:
@@ -41,7 +41,7 @@ jobs:
         run: |
           gh release download "$env:RELEASE_TAG" --repo "nickr2001/choppingboard-releases" --pattern "$env:RELEASE_ZIP"
 
-      # Step 6: Fail early if zip is missing
+      # Fail early if zip missing
       - name: Check zip exists
         shell: pwsh
         run: |
@@ -50,17 +50,17 @@ jobs:
             exit 1
           }
 
-      # Step 7: List downloaded files
+      # List downloaded files
       - name: List downloaded files
         shell: pwsh
         run: dir
 
-      # Step 8: Extract the zip into the top-level release folder
+      # Extract the zip into the top-level release folder
       - name: Extract the zip
         shell: pwsh
         run: Expand-Archive -Path "$env:RELEASE_ZIP" -DestinationPath "$env:RELEASE_FOLDER"
 
-      # Step 9: Fail early if executable is missing (nested folder)
+      # Fail early if executable missing (nested folder)
       - name: Check executable exists
         shell: pwsh
         run: |
@@ -70,29 +70,30 @@ jobs:
             exit 1
           }
 
-      # Step 10: List extracted folder (PowerShell-safe recursive)
+      # List extracted files recursively
       - name: List extracted files
         shell: pwsh
         run: dir "$env:RELEASE_FOLDER" -Recurse
 
-      # Step 11: Install NSIS
+      # Install NSIS
       - name: Install NSIS
         run: choco install nsis -y
 
-      # Step 12: Build NSIS installer (full path, nested folder)
+      # Build NSIS installer using absolute path
       - name: Build NSIS installer
         shell: pwsh
         run: |
           $nsisPath = "${env:ProgramFiles(x86)}\NSIS\makensis.exe"
           $releaseFolderPath = Join-Path "$env:RELEASE_FOLDER" "$env:RELEASE_FOLDER"
+          Write-Host "Passing absolute path to NSIS: $releaseFolderPath"
           & "$nsisPath" /DAPPVER="$env:RELEASE_TAG" /DReleaseFolder="$releaseFolderPath" installer.nsi
 
-      # Step 13: Verify installer exists
+      # Verify installer exists
       - name: Verify installer exists
         shell: pwsh
         run: dir
           
-      # Step 14: Upload installer to the release
+      # Upload installer to the release
       - name: Upload installer to the release
         uses: softprops/action-gh-release@v2
         with:
