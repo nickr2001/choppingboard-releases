@@ -55,10 +55,10 @@ jobs:
         shell: pwsh
         run: dir
 
-      # Step 8: Extract the zip
-      - name: Extract zip
+      # Step 8: Extract the zip directly into the release folder
+      - name: Extract the zip
         shell: pwsh
-        run: Expand-Archive -Path "$env:RELEASE_ZIP" -DestinationPath .
+        run: Expand-Archive -Path "$env:RELEASE_ZIP" -DestinationPath "$env:RELEASE_FOLDER"
 
       # Step 9: Fail early if executable is missing
       - name: Check executable exists
