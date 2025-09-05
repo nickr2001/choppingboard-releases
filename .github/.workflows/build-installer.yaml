@@ -1,0 +1,51 @@
+name: Build NSIS Installer
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  build-installer:
+    runs-on: windows-latest
+
+    steps:
+      # Step 1: Checkout the public repo (needed for workflow files)
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # Step 2: Set release variables
+      - name: Set release variables
+        run: |
+          echo "RELEASE_TAG=${GITHUB_REF##*/}" >> $GITHUB_ENV
+          echo "RELEASE_ZIP=CB-${GITHUB_REF##*/}.zip" >> $GITHUB_ENV
+          echo "RELEASE_FOLDER=CB-${GITHUB_REF##*/}" >> $GITHUB_ENV
+
+      # Step 3: Download zip from private repo
+      - name: Download release zip from private repo
+        uses: actions/download-release-asset@v2
+        with:
+          repository: your-username/your-private-repo
+          tag: ${{ env.RELEASE_TAG }}
+          name: ${{ env.RELEASE_ZIP }}
+          path: .
+          token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+
+      # Step 4: Extract the zip and prepare the executable
+      - name: Extract zip
+        run: |
+          Expand-Archive -Path ${{ env.RELEASE_ZIP }} -DestinationPath dist
+          Move-Item -Path dist\${{ env.RELEASE_FOLDER }}\ChoppingBoard.exe -Destination dist\ChoppingBoard.exe
+
+      # Step 5: Install NSIS
+      - name: Install NSIS
+        run: choco install nsis -y
+
+      # Step 6: Build the installer
+      - name: Build NSIS installer
+        run: makensis /DAPPVER=${{ env.RELEASE_TAG }} installer.nsi
+
+      # Step 7: Upload installer to release
+      - name: Upload installer to public release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: installer_ChoppingBoard_${{ env.RELEASE_TAG }}.exe
