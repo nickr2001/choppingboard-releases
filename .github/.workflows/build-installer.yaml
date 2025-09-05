@@ -9,40 +9,52 @@ jobs:
     runs-on: windows-latest
 
     steps:
-      # Step 1: Checkout the public repo
+      # Step 1: Checkout your main repo (where workflow is defined)
       - name: Checkout repository
         uses: actions/checkout@v4
 
       # Step 2: Set release variables
       - name: Set release variables
         run: |
-          echo "RELEASE_TAG=${GITHUB_REF##*/}" >> $GITHUB_ENV
-          echo "RELEASE_ZIP=CB-${GITHUB_REF##*/}.zip" >> $GITHUB_ENV
-          echo "RELEASE_FOLDER=CB-${GITHUB_REF##*/}" >> $GITHUB_ENV
+          echo "RELEASE_TAG=${{ github.event.release.tag_name }}" >> $GITHUB_ENV
+          echo "RELEASE_ZIP=CB-${{ github.event.release.tag_name }}.zip" >> $GITHUB_ENV
+          echo "RELEASE_FOLDER=CB-${{ github.event.release.tag_name }}" >> $GITHUB_ENV
 
-      # Step 3: Download the release zip attached to this public release
+      # Step 3: Download release zip from your releases repo
       - name: Download release asset
-        uses: dawidd6/fetch-gh-release-asset@v1
+        uses: dawidd6/fetch-gh-release-asset@v1.0.3
         with:
-          repo: ${{ github.repository }}
+          repo: nickr2001/choppingboard-releases
           version: ${{ github.event.release.tag_name }}
           file: ${{ env.RELEASE_ZIP }}
 
-      # Step 4: Extract the zip
+      # Step 4: Debug - verify zip exists
+      - name: List downloaded files
+        run: dir
+
+      # Step 5: Extract the zip
       - name: Extract zip
         run: Expand-Archive -Path ${{ env.RELEASE_ZIP }} -DestinationPath .
 
-      # Step 5: Install NSIS
+      # Step 6: Debug - list extracted folder
+      - name: List extracted files
+        run: dir ${{ env.RELEASE_FOLDER }} /s
+
+      # Step 7: Install NSIS
       - name: Install NSIS
         run: choco install nsis -y
 
-      # Step 6: Build NSIS installer
+      # Step 8: Build NSIS installer
       - name: Build NSIS installer
         run: |
           makensis /DAPPVER=${{ env.RELEASE_TAG }} /DReleaseFolder=${{ env.RELEASE_FOLDER }} installer.nsi
 
-      # Step 7: Upload installer to release
-      - name: Upload installer to public release
+      # Step 9: Debug - verify installer
+      - name: Verify installer exists
+        run: dir
+
+      # Step 10: Upload installer to the release
+      - name: Upload installer to release
         uses: softprops/action-gh-release@v2
         with:
           files: installer_ChoppingBoard_${{ env.RELEASE_TAG }}.exe
