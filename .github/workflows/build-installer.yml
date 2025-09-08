@@ -4,57 +4,43 @@ on:
   release:
     types: [published]
 
+permissions:
+  contents: write
+
 jobs:
   build-installer:
     runs-on: windows-latest
 
     steps:
-      # Step 1: Checkout repository
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # Step 2: Set release variables
-      - name: Set release variables
-        shell: pwsh
-        run: |
-          echo "RELEASE_TAG=${{ github.event.release.tag_name }}" >> $env:GITHUB_ENV
-          echo "RELEASE_ZIP=CB-${{ github.event.release.tag_name }}.zip" >> $env:GITHUB_ENV
+      - name: Download release zip
+        uses: actions/download-release-asset@v1
+        with:
+          tag: ${{ github.event.release.tag_name }}
+          file: CB-${{ github.event.release.tag_name }}.zip
 
-      # Step 3: Download release asset
-      - name: Download release asset
-        env:
-          GH_TOKEN: ${{ github.token }}
+      - name: Extract release zip
         run: |
-          gh release download "$env:RELEASE_TAG" `
-            --repo "${{ github.repository }}" `
-            --pattern "$env:RELEASE_ZIP"
-
-      # Step 4: Extract zip and move exe to repo root
-      - name: Extract and move exe
-        shell: pwsh
-        run: |
-          Expand-Archive -Path "$env:RELEASE_ZIP" -DestinationPath build -Force
-          $exe = Get-ChildItem -Path build -Recurse -Filter "ChoppingBoard.exe" | Select-Object -First 1
-          if (-not $exe) {
-            Write-Error "ChoppingBoard.exe not found in extracted archive!"
+          Expand-Archive -Path "CB-${{ github.event.release.tag_name }}.zip" -DestinationPath "build"
+          # Move ChoppingBoard.exe up next to installer.nsi
+          $exePath = Get-ChildItem -Path build -Recurse -Filter "ChoppingBoard.exe" | Select-Object -First 1
+          if ($null -eq $exePath) {
+            Write-Error "ChoppingBoard.exe not found in extracted archive"
             exit 1
           }
-          Copy-Item $exe.FullName . -Force
-          Write-Host "Copied $($exe.FullName) to repo root"
+          Move-Item $exePath.FullName -Destination "$PWD\ChoppingBoard.exe"
 
-      # Step 5: Install NSIS
       - name: Install NSIS
         run: choco install nsis -y
 
-      # Step 6: Build NSIS installer
       - name: Build installer
-        shell: pwsh
         run: |
           $nsisPath = "${env:ProgramFiles(x86)}\NSIS\makensis.exe"
-          & $nsisPath /DAPPVER="$env:RELEASE_TAG" installer.nsi
+          & $nsisPath /DAPPVER="${{ github.event.release.tag_name }}" installer.nsi
 
-      # Step 7: Upload installer to release
-      - name: Upload installer
+      - name: Upload installer to release
         uses: softprops/action-gh-release@v2
         with:
           files: installer_ChoppingBoard_${{ github.event.release.tag_name }}.exe
