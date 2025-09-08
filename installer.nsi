@@ -16,22 +16,17 @@ OutFile "installer_${APPNAME}_${APPVER}.exe"
 InstallDir "$PROGRAMFILES"
 
 Var MainDir
-Var ReleaseFolder ; folder name inside the zip containing ChoppingBoard.exe
 
 ;--------------------------------
 ; Sections
 Section "Main App (required)" SectionMain
     SectionIn RO
+    ; $INSTDIR\ChoppingBoard
     StrCpy $MainDir "$INSTDIR\${APPNAME}"
     SetOutPath "$MainDir"
 
-    ; Debug: log what NSIS sees
-    DetailPrint "DEBUG: APPVER=${APPVER}"
-    DetailPrint "DEBUG: ReleaseFolder=${ReleaseFolder}"
-    DetailPrint "DEBUG: Trying to copy ${ReleaseFolder}\${APPNAME}.exe"
-
-    ; Copy the executable from the zip folder using compile-time define
-    File "/oname=${APPNAME}.exe" "${ReleaseFolder}\${APPNAME}.exe"
+    ; Copy the executable (must be in repo root when workflow runs)
+    File "/oname=${APPNAME}.exe" "${APPNAME}.exe"
 
     CreateDirectory "$MainDir\public\data"
 SectionEnd
