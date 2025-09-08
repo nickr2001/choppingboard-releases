@@ -15,15 +15,15 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Download release zip
-        uses: actions/download-release-asset@v1
-        with:
-          tag: ${{ github.event.release.tag_name }}
-          file: CB-${{ github.event.release.tag_name }}.zip
+      - name: Download release asset (zip)
+        run: |
+          gh release download ${{ github.event.release.tag_name }} --pattern "CB-*.zip" --dir .
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Extract release zip
         run: |
-          Expand-Archive -Path "CB-${{ github.event.release.tag_name }}.zip" -DestinationPath "build"
+          Expand-Archive -Path (Get-Item CB-*.zip).Name -DestinationPath "build"
           # Move ChoppingBoard.exe up next to installer.nsi
           $exePath = Get-ChildItem -Path build -Recurse -Filter "ChoppingBoard.exe" | Select-Object -First 1
           if ($null -eq $exePath) {
