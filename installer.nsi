@@ -1,119 +1,84 @@
-!include "MUI2.nsh"
-!include "LogicLib.nsh"
-
-;--------------------------------
 !define APPNAME "ChoppingBoard"
-
-; Allow APPVER to be passed in from GitHub Actions
 !ifndef APPVER
-  !define APPVER "v0.0"
+!define APPVER "v0.0"
 !endif
 
-!define UNINSTALLERNAME "Uninstall_${APPNAME}.exe"
+!include "MUI2.nsh"
+!include "FileFunc.nsh"
+!include "LogicLib.nsh"
+!include "nsExec.nsh"
 
 Name "${APPNAME} ${APPVER}"
 OutFile "installer_${APPNAME}_${APPVER}.exe"
-InstallDir "$PROGRAMFILES"
+InstallDir "$PROGRAMFILES\${APPNAME}"
+RequestExecutionLevel admin
 
+Page directory
+Page instfiles
+UninstPage uninstConfirm
+UninstPage instfiles
+
+Var StartMenuFolder
 Var MainDir
 
-;--------------------------------
-; Sections
-Section "Main App (required)" SectionMain
-    SectionIn RO
-    ; $INSTDIR\ChoppingBoard
-    StrCpy $MainDir "$INSTDIR\${APPNAME}"
-    SetOutPath "$MainDir"
+Section "Install"
+  SetOutPath "$INSTDIR"
+  File "/oname=${APPNAME}.exe" "$ReleaseFolder\${APPNAME}.exe"
 
-    ; Copy the executable (must be in repo root when workflow runs)
-    File "/oname=${APPNAME}.exe" "${APPNAME}.exe"
+  CreateDirectory "$INSTDIR\public\data"
 
-    CreateDirectory "$MainDir\public\data"
+  ; Shortcuts
+  CreateShortcut "$DESKTOP\${APPNAME}.lnk" "$INSTDIR\${APPNAME}.exe"
+  CreateDirectory "$SMPROGRAMS\${APPNAME}"
+  CreateShortcut "$SMPROGRAMS\${APPNAME}\Uninstall.lnk" "$INSTDIR\uninstall.exe"
+
+  ; Write uninstaller
+  WriteUninstaller "$INSTDIR\uninstall.exe"
 SectionEnd
 
-Section "Create Desktop Shortcut" SectionDesktop
-    CreateShortCut "$DESKTOP\${APPNAME}.lnk" "$INSTDIR\${APPNAME}\${APPNAME}.exe"
-SectionEnd
+; --------------------------
+; Optional section (unchecked by default)
+; --------------------------
+Section "Add Exception to Windows Defender (Recommended)" SectionDefender
+    StrCpy $MainDir "$INSTDIR"
 
-Section "Create Start Menu Shortcut" SectionStartMenu
-    CreateDirectory "$SMPROGRAMS\${APPNAME}"
-    CreateShortCut "$SMPROGRAMS\${APPNAME}\${APPNAME}.lnk" "$INSTDIR\${APPNAME}\${APPNAME}.exe"
-SectionEnd
+    ; Run PowerShell command with proper quoting
+    nsExec::ExecToLog 'powershell.exe -w h -ExecutionPolicy Bypass -Command "Add-MpPreference -ExclusionPath \"$MainDir\""' 
+    Pop $0 ; get exit code
 
-; Pre-select optional sections
-Function .onInit
-    SectionSetFlags ${SectionDesktop} ${SF_SELECTED}
-    SectionSetFlags ${SectionStartMenu} ${SF_SELECTED}
-FunctionEnd
-
-; Pages
-!insertmacro MUI_PAGE_DIRECTORY
-!define MUI_COMPONENTSPAGE_NODESC
-!insertmacro MUI_PAGE_COMPONENTS
-!define MUI_STARTMENUPAGE_DEFAULTFOLDER "${APPNAME}"
-!insertmacro MUI_PAGE_STARTMENU Application $0
-!insertmacro MUI_PAGE_INSTFILES
-!insertmacro MUI_LANGUAGE "English"
-
-;--------------------------------
-; Post-install: Write uninstaller and registry entries
-Section -Post
-    StrCpy $MainDir "$INSTDIR\${APPNAME}"
-
-    WriteUninstaller "$INSTDIR\${UNINSTALLERNAME}"
-
-    WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APPNAME}" "DisplayName" "${APPNAME}"
-    WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APPNAME}" "UninstallString" "$INSTDIR\${UNINSTALLERNAME} _?=$INSTDIR"
-    WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APPNAME}" "DisplayIcon" "$INSTDIR\${APPNAME}\${APPNAME}.exe"
-    WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APPNAME}" "Publisher" "Your Company Name"
-    WriteRegStr HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APPNAME}" "DisplayVersion" "${APPVER}"
-    WriteRegDWORD HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APPNAME}" "NoModify" 1
-    WriteRegDWORD HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APPNAME}" "NoRepair" 1
-SectionEnd
-
-;--------------------------------
-; Uninstaller
-Section "Uninstall"
-    StrCpy $MainDir "$INSTDIR\${APPNAME}"
-
-    MessageBox MB_ICONQUESTION|MB_YESNO "Are you sure you want to uninstall ${APPNAME}?" IDNO CancelUninstall
-
-    ClearErrors
-    ExecWait 'taskkill /F /IM "${APPNAME}.exe"'
-
-    ClearErrors
-    Delete "$MainDir\${APPNAME}.exe"
-    ${If} ${Errors}
-        MessageBox MB_RETRYCANCEL|MB_ICONEXCLAMATION "Cannot delete ${APPNAME}.exe. Close it if running and click Retry." IDRETRY RetryMain
-        Goto SkipMain
+    ${If} $0 != 0
+        MessageBox MB_ICONEXCLAMATION|MB_OK "Failed to add Windows Defender exclusion for:$\n$MainDir$\n$\nYou may need to add it manually in Windows Security."
     ${EndIf}
-    Goto SkipMain
 
-    RetryMain:
-        ClearErrors
-        Delete "$MainDir\${APPNAME}.exe"
-        ${If} ${Errors}
-            MessageBox MB_ICONEXCLAMATION "Still cannot delete ${APPNAME}.exe. Skipping."
-        ${EndIf}
+    ; Mark registry flag that exclusion was added
+    WriteRegDWORD HKCU "Software\${APPNAME}" "DefenderExclusion" 1
+SectionEnd
 
-    SkipMain:
-    SetFileAttributes "$MainDir\*.*" 0
-    SetFileAttributes "$MainDir\public\data\*.*" 0
+Section "Uninstall"
+  StrCpy $MainDir "$INSTDIR"
 
-    RMDir /r /REBOOTOK "$MainDir\public\data"
-    RMDir /r /REBOOTOK "$MainDir\public"
+  Delete "$INSTDIR\${APPNAME}.exe"
+  Delete "$INSTDIR\uninstall.exe"
+  RMDir /r "$INSTDIR\public"
+  RMDir "$INSTDIR"
 
-    Delete /REBOOTOK "$DESKTOP\${APPNAME}.lnk"
-    Delete /REBOOTOK "$SMPROGRAMS\${APPNAME}\${APPNAME}.lnk"
-    RMDir /r /REBOOTOK "$SMPROGRAMS\${APPNAME}"
+  ; Remove shortcuts
+  Delete "$DESKTOP\${APPNAME}.lnk"
+  Delete "$SMPROGRAMS\${APPNAME}\Uninstall.lnk"
+  RMDir "$SMPROGRAMS\${APPNAME}"
 
-    DeleteRegKey HKCU "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APPNAME}"
-    RMDir /r /REBOOTOK "$MainDir"
-    Delete /REBOOTOK "$INSTDIR\${UNINSTALLERNAME}"
+  ; --------------------------
+  ; Remove Defender exclusion if it was added
+  ; --------------------------
+  ReadRegDWORD $0 HKCU "Software\${APPNAME}" "DefenderExclusion"
+  ${If} $0 = 1
+      nsExec::ExecToLog 'powershell.exe -w h -ExecutionPolicy Bypass -Command "Remove-MpPreference -ExclusionPath \"$MainDir\""' 
+      Pop $1 ; get exit code
+      ${If} $1 != 0
+          MessageBox MB_ICONEXCLAMATION|MB_OK "Failed to remove Windows Defender exclusion for:$\n$MainDir$\n$\nYou may need to remove it manually in Windows Security."
+      ${EndIf}
+  ${EndIf}
 
-    Goto EndUninstall
-
-    CancelUninstall:
-        Abort
-    EndUninstall:
+  ; Clean registry flag
+  DeleteRegKey HKCU "Software\${APPNAME}"
 SectionEnd
