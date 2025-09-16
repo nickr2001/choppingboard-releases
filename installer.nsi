@@ -27,7 +27,7 @@ Var MainDir
 Section "Main App (required)" SectionMain
   SectionIn RO
   SetOutPath "$INSTDIR"
-  File "/oname=${APPNAME}.exe" "$ReleaseFolder\${APPNAME}.exe"
+  File "/oname=${APPNAME}.exe" "${APPNAME}.exe"
 
   CreateDirectory "$INSTDIR\public\data"
 
