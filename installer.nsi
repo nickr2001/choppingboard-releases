@@ -12,18 +12,23 @@ OutFile "installer_${APPNAME}_${APPVER}.exe"
 InstallDir "$PROGRAMFILES\${APPNAME}"
 RequestExecutionLevel admin
 
-; Pages
-Page directory
-Page instfiles
-UninstPage uninstConfirm
-UninstPage instfiles
-
 Var StartMenuFolder
 Var MainDir
 
-; --------------------------
+;--------------------------------
+; Pages (Modern UI)
+!insertmacro MUI_PAGE_DIRECTORY
+!define MUI_COMPONENTSPAGE_NODESC
+!insertmacro MUI_PAGE_COMPONENTS
+!insertmacro MUI_PAGE_INSTFILES
+!insertmacro MUI_UNPAGE_CONFIRM
+!insertmacro MUI_UNPAGE_INSTFILES
+!insertmacro MUI_LANGUAGE "English"
+
+;--------------------------------
+; Sections
+
 ; Main App (required)
-; --------------------------
 Section "Main App (required)" SectionMain
   SectionIn RO
   SetOutPath "$INSTDIR"
@@ -35,21 +40,18 @@ Section "Main App (required)" SectionMain
   WriteUninstaller "$INSTDIR\uninstall.exe"
 SectionEnd
 
-; --------------------------
-; Optional Shortcuts
-; --------------------------
+; Desktop Shortcut
 Section "Create Desktop Shortcut" SectionDesktop
   CreateShortcut "$DESKTOP\${APPNAME}.lnk" "$INSTDIR\${APPNAME}.exe"
 SectionEnd
 
+; Start Menu Shortcut
 Section "Create Start Menu Shortcut" SectionStartMenu
   CreateDirectory "$SMPROGRAMS\${APPNAME}"
   CreateShortcut "$SMPROGRAMS\${APPNAME}\Uninstall.lnk" "$INSTDIR\uninstall.exe"
 SectionEnd
 
-; --------------------------
-; Optional section: Defender Exclusion
-; --------------------------
+; Defender Exception (optional, unchecked by default)
 Section "Add Exception to Windows Defender (Recommended)" SectionDefender
     StrCpy $MainDir "$INSTDIR"
 
@@ -65,17 +67,15 @@ Section "Add Exception to Windows Defender (Recommended)" SectionDefender
     WriteRegDWORD HKCU "Software\${APPNAME}" "DefenderExclusion" 1
 SectionEnd
 
-; --------------------------
-; Pre-select desktop + start menu
-; --------------------------
+;--------------------------------
+; Pre-select Desktop + Start Menu
 Function .onInit
     SectionSetFlags ${SectionDesktop} ${SF_SELECTED}
     SectionSetFlags ${SectionStartMenu} ${SF_SELECTED}
 FunctionEnd
 
-; --------------------------
+;--------------------------------
 ; Uninstaller
-; --------------------------
 Section "Uninstall"
   StrCpy $MainDir "$INSTDIR"
 
