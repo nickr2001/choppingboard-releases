@@ -14,6 +14,7 @@ RequestExecutionLevel admin
 
 Var StartMenuFolder
 Var MainDir
+Var TempDir ; >>> ADDED <<<
 
 ;--------------------------------
 ; Pages (Modern UI)
@@ -44,6 +45,10 @@ Section "Main App (required)" SectionMain
 
   CreateDirectory "$INSTDIR\public\data"
 
+  ; >>> ADDED: Create runtime-temp folder in LocalAppData <<<
+  StrCpy $TempDir "$LOCALAPPDATA\${APPNAME}\runtime-temp"
+  CreateDirectory "$TempDir"
+
   ; Write uninstaller
   WriteUninstaller "$INSTDIR\uninstall.exe"
 SectionEnd
@@ -62,12 +67,19 @@ SectionEnd
 ; Defender Exception (optional, unchecked by default)
 Section "Add Exception to Windows Defender (Recommended)" SectionDefender
     StrCpy $MainDir "$INSTDIR"
+    StrCpy $TempDir "$LOCALAPPDATA\${APPNAME}\runtime-temp" ; >>> ADDED <<<
 
     nsExec::ExecToLog 'powershell.exe -w h -ExecutionPolicy Bypass -Command "Add-MpPreference -ExclusionPath \"$MainDir\""' 
     Pop $0 
-
     ${If} $0 != 0
         MessageBox MB_ICONEXCLAMATION|MB_OK "Failed to add Windows Defender exclusion for:$\n$MainDir$\n$\nYou may need to add it manually in Windows Security."
+    ${EndIf}
+
+    ; >>> ADDED: Add exclusion for runtime-temp folder <<<
+    nsExec::ExecToLog 'powershell.exe -w h -ExecutionPolicy Bypass -Command "Add-MpPreference -ExclusionPath \"$TempDir\""' 
+    Pop $0 
+    ${If} $0 != 0
+        MessageBox MB_ICONEXCLAMATION|MB_OK "Failed to add Windows Defender exclusion for:$\n$TempDir$\n$\nYou may need to add it manually in Windows Security."
     ${EndIf}
 
     WriteRegDWORD HKCU "Software\${APPNAME}" "DefenderExclusion" 1
@@ -90,6 +102,7 @@ FunctionEnd
 ; Uninstaller
 Section "Uninstall"
   StrCpy $MainDir "$INSTDIR"
+  StrCpy $TempDir "$LOCALAPPDATA\${APPNAME}\runtime-temp" ; >>> ADDED <<<
 
   Delete "$INSTDIR\${APPNAME}.exe"
   Delete "$INSTDIR\uninstall.exe"
@@ -107,7 +120,17 @@ Section "Uninstall"
       ${If} $1 != 0
           MessageBox MB_ICONEXCLAMATION|MB_OK "Failed to remove Windows Defender exclusion for:$\n$MainDir$\n$\nYou may need to remove it manually in Windows Security."
       ${EndIf}
+
+      ; >>> ADDED: Remove exclusion for runtime-temp folder <<<
+      nsExec::ExecToLog 'powershell.exe -w h -ExecutionPolicy Bypass -Command "Remove-MpPreference -ExclusionPath \"$TempDir\""' 
+      Pop $1
+      ${If} $1 != 0
+          MessageBox MB_ICONEXCLAMATION|MB_OK "Failed to remove Windows Defender exclusion for:$\n$TempDir$\n$\nYou may need to remove it manually in Windows Security."
+      ${EndIf}
   ${EndIf}
+
+  ; >>> ADDED: Delete runtime-temp folder <<<
+  RMDir /r "$TempDir"
 
   DeleteRegKey HKCU "Software\${APPNAME}"
 SectionEnd
