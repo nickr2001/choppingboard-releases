@@ -1,6 +1,6 @@
 !define APPNAME "ChoppingBoard"
 !ifndef APPVER
-!define APPVER "v0.0"
+!define APPVER "0.0"
 !endif
 
 !include "MUI2.nsh"
