@@ -1,4 +1,6 @@
 !define APPNAME "ChoppingBoard"
+!define UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${APP_NAME}"
+!define PUBLISHER "choppingboard.app"
 !ifndef APPVER
 !define APPVER "0.0"
 !endif
@@ -48,6 +50,18 @@ Section "Main App (required)" SectionMain
   ; >>> ADDED: Create runtime-temp folder in LocalAppData <<<
   StrCpy $TempDir "$LOCALAPPDATA\${APPNAME}\runtime-temp"
   CreateDirectory "$TempDir"
+
+  ; Write uninstall information
+  WriteRegStr HKLM "${UNINST_KEY}" "DisplayName" "${APP_NAME}"
+  WriteRegStr HKLM "${UNINST_KEY}" "Publisher" "${PUBLISHER}"
+  WriteRegStr HKLM "${UNINST_KEY}" "InstallLocation" "${INSTALLDIR}"
+  WriteRegStr HKLM "${UNINST_KEY}" "UninstallString" '"$INSTDIR\uninstall.exe"'
+  WriteRegStr HKLM "${UNINST_KEY}" "DisplayIcon" "$INSTDIR\MyApp.exe"
+  WriteRegDWORD HKLM "${UNINST_KEY}" "NoModify" 1
+  WriteRegDWORD HKLM "${UNINST_KEY}" "NoRepair" 1
+
+  ; Optional: Estimated size in KB
+  WriteRegDWORD HKLM "${UNINST_KEY}" "EstimatedSize" 82243 ; 80.3 MB
 
   ; Write uninstaller
   WriteUninstaller "$INSTDIR\uninstall.exe"
