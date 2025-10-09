@@ -52,11 +52,11 @@ Section "Main App (required)" SectionMain
   CreateDirectory "$TempDir"
 
   ; Write uninstall information
-  WriteRegStr HKLM "${UNINST_KEY}" "DisplayName" "${APP_NAME}"
+  WriteRegStr HKLM "${UNINST_KEY}" "DisplayName" "${APPNAME}"
   WriteRegStr HKLM "${UNINST_KEY}" "Publisher" "${PUBLISHER}"
-  WriteRegStr HKLM "${UNINST_KEY}" "InstallLocation" "${INSTALLDIR}"
+  WriteRegStr HKLM "${UNINST_KEY}" "InstallLocation" "${INSTDIR}"
   WriteRegStr HKLM "${UNINST_KEY}" "UninstallString" '"$INSTDIR\uninstall.exe"'
-  WriteRegStr HKLM "${UNINST_KEY}" "DisplayIcon" "$INSTDIR\MyApp.exe"
+  WriteRegStr HKLM "${UNINST_KEY}" "DisplayIcon" "$INSTDIR\${APPNAME}.exe"
   WriteRegDWORD HKLM "${UNINST_KEY}" "NoModify" 1
   WriteRegDWORD HKLM "${UNINST_KEY}" "NoRepair" 1
 
